@@ -16,6 +16,27 @@ npm run dev
 
 Откройте адрес, который напечатает Vite. Dev-сервер слушает порт **46231**.
 
+## Supabase (сохранение счёта)
+
+После раунда клиент пишет строку в таблицу `scores` (без собственного бэкенда).
+
+1. Скопируйте `.env.example` в `.env`.
+2. `VITE_SUPABASE_URL` уже указан. В `VITE_SUPABASE_ANON_KEY` вставьте **anon public** ключ из Settings → API (не service role).
+3. В SQL Editor выполните `supabase/scores.sql`.
+4. Перезапустите `npm run dev`, чтобы Vite подхватил `.env`.
+
+Ожидаемые колонки `scores`:
+
+| Колонка | Тип | Смысл |
+| --- | --- | --- |
+| `id` | `uuid` | первичный ключ |
+| `player` | `text` | имя с экрана старта, иначе `Игрок` |
+| `score` | `integer` | число верных ответов |
+| `total` | `integer` | число вопросов в раунде |
+| `created_at` | `timestamptz` | время записи (default `now()`) |
+
+Если ключ пустой или сеть недоступна, экран итогов всё равно показывается; ошибка сохранения — отдельным сообщением.
+
 Сборка:
 
 ```bash
@@ -33,8 +54,11 @@ npm run preview
 ## Структура
 
 - `index.html` — оболочка страницы
-- `src/main.js` — экраны, таймер, плеер, подсчёт очков
+- `src/main.js` — экраны, таймер, плеер, подсчёт очков, запись в Supabase
+- `src/supabase.js` — клиент `@supabase/supabase-js` через `import.meta.env.VITE_*`
 - `src/questions.js` — вопросы и тексты
 - `src/style.css` — оформление (десктоп и мобильный)
+- `supabase/scores.sql` — схема таблицы `scores` и RLS для anon
+- `.env.example` — шаблон URL и пустого anon key
 - `public/audio/` — WAV-фрагменты
 - `scripts/generate-audio.py` — генератор тех же фрагментов

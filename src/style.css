@@ -140,6 +140,43 @@ h2 {
   flex-shrink: 0;
 }
 
+.field {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.field input {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--stroke);
+  background: rgba(8, 5, 16, 0.45);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 13px 16px;
+}
+
+.field input:focus {
+  outline: 2px solid rgba(244, 193, 78, 0.45);
+  outline-offset: 1px;
+}
+
+.save-note {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.save-note.ok {
+  color: var(--mint);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

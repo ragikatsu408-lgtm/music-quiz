@@ -1,5 +1,6 @@
 import "./style.css";
 import { QUESTIONS, QUESTION_SECONDS, scoreMessage } from "./questions.js";
+import { getPlayerLabel, saveScore } from "./supabase.js";
 
 const app = document.querySelector("#app");
 
@@ -14,6 +15,9 @@ const state = {
   playing: false,
   audioError: "",
   answers: [],
+  playerName: "",
+  saveStatus: "idle",
+  saveError: "",
 };
 
 let timerId = null;
@@ -94,14 +98,39 @@ function lockAnswer(choiceId, timedOut = false) {
   render();
   window.setTimeout(() => {
     if (state.index + 1 >= QUESTIONS.length) {
-      state.screen = "results";
-    } else {
-      state.index += 1;
-      beginQuestion();
+      finishQuiz();
       return;
     }
-    render();
+    state.index += 1;
+    beginQuestion();
   }, 1100);
+}
+
+function finishQuiz() {
+  stopTimer();
+  stopAudio();
+  state.screen = "results";
+  state.saveStatus = "saving";
+  state.saveError = "";
+  render();
+  persistScore();
+}
+
+async function persistScore() {
+  try {
+    await saveScore({
+      player: state.playerName,
+      score: state.score,
+      total: QUESTIONS.length,
+    });
+    state.saveStatus = "saved";
+    state.saveError = "";
+  } catch (error) {
+    state.saveStatus = "error";
+    state.saveError =
+      error?.message || "Не удалось сохранить счёт. Проверьте сеть и ключ Supabase.";
+  }
+  if (state.screen === "results") render();
 }
 
 function beginQuestion() {
@@ -115,7 +144,13 @@ function beginQuestion() {
   playClip();
 }
 
+function readPlayerNameFromForm() {
+  const input = app.querySelector("[data-field='player']");
+  if (input) state.playerName = input.value;
+}
+
 function startQuiz() {
+  readPlayerNameFromForm();
   if (!QUESTIONS.length) {
     state.screen = "empty";
     render();
@@ -125,6 +160,8 @@ function startQuiz() {
   state.index = 0;
   state.score = 0;
   state.answers = [];
+  state.saveStatus = "idle";
+  state.saveError = "";
   beginQuestion();
 }
 
@@ -173,6 +210,17 @@ function renderHome() {
         <li><span class="dot"></span>Таймер 15 секунд: тишина тоже считается ответом</li>
         <li><span class="dot"></span>Фрагмент можно переслушать, пока время идёт</li>
       </ul>
+      <label class="field">
+        <span>Ваше имя для таблицы счёта</span>
+        <input
+          data-field="player"
+          type="text"
+          maxlength="40"
+          autocomplete="nickname"
+          placeholder="Игрок"
+          value="${escapeHtml(state.playerName)}"
+        />
+      </label>
       <div class="actions">
         <button class="btn btn-primary" data-action="start">Начать игру</button>
       </div>
@@ -283,7 +331,9 @@ function renderResults() {
         <div class="big">${state.score}/${total}</div>
         <h2>Итоги раунда</h2>
         <p class="lede">${escapeHtml(scoreMessage(state.score, total))}</p>
+        <p class="muted">${escapeHtml(getPlayerLabel(state.playerName))} · ${state.score} из ${total}</p>
       </div>
+      ${renderSaveNotice()}
       ${
         state.answers.length
           ? `<ul class="recap">${recap}</ul>`
@@ -295,6 +345,19 @@ function renderResults() {
       </div>
     </section>
   `;
+}
+
+function renderSaveNotice() {
+  if (state.saveStatus === "saving") {
+    return `<p class="save-note">Сохраняем счёт в Supabase…</p>`;
+  }
+  if (state.saveStatus === "saved") {
+    return `<p class="save-note ok">Счёт сохранён в таблице scores.</p>`;
+  }
+  if (state.saveStatus === "error") {
+    return `<div class="error-box" role="status">${escapeHtml(state.saveError)}</div>`;
+  }
+  return "";
 }
 
 function render() {
