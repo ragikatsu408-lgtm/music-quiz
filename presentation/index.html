@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Поэтизация речи</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="paper" aria-hidden="true"></div>
+    <div class="deck" id="deck">
+      <header class="topbar">
+        <p class="kicker" id="kicker"></p>
+        <p class="counter" id="counter"></p>
+      </header>
+      <main class="stage" id="stage" tabindex="0"></main>
+      <footer class="chrome">
+        <p class="hint" id="hint">
+          ← → или клик · свайп на телефоне · Esc — оглавление
+        </p>
+        <div class="progress" role="progressbar" aria-valuemin="1" id="progress">
+          <span class="progress__fill" id="progressFill"></span>
+        </div>
+        <nav class="nav" aria-label="Навигация по слайдам">
+          <button type="button" class="nav__btn" id="prevBtn" aria-label="Предыдущий слайд">
+            ←
+          </button>
+          <button type="button" class="nav__btn" id="nextBtn" aria-label="Следующий слайд">
+            →
+          </button>
+        </nav>
+      </footer>
+    </div>
+    <aside class="toc" id="toc" hidden>
+      <div class="toc__panel">
+        <p class="toc__title">Оглавление</p>
+        <ol class="toc__list" id="tocList"></ol>
+        <button type="button" class="toc__close" id="tocClose">Закрыть</button>
+      </div>
+    </aside>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

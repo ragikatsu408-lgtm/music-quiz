@@ -1,0 +1,409 @@
+:root {
+  --paper: #14110e;
+  --ink: #f3ead8;
+  --muted: #b7aa94;
+  --gold: #d4b06a;
+  --gold-dim: rgba(212, 176, 106, 0.28);
+  --rule: rgba(243, 234, 216, 0.12);
+  --card: rgba(24, 20, 16, 0.72);
+  --was: #c98b7b;
+  --became: #c9d4b8;
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Manrope, "Segoe UI", sans-serif;
+}
+
+body {
+  overflow: hidden;
+}
+
+.paper {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(1200px 700px at 12% -10%, rgba(212, 176, 106, 0.09), transparent 55%),
+    radial-gradient(900px 500px at 110% 20%, rgba(120, 86, 48, 0.18), transparent 50%),
+    linear-gradient(180deg, #1b1713 0%, #100e0c 100%);
+  pointer-events: none;
+}
+
+.paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.deck {
+  position: relative;
+  z-index: 1;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 1.1rem 1.4rem 1rem;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.topbar,
+.chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.kicker,
+.counter,
+.hint {
+  margin: 0;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.counter {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+
+.stage {
+  outline: none;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  cursor: pointer;
+}
+
+.slide {
+  width: 100%;
+  animation: rise 380ms ease;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.eyebrow {
+  margin: 0 0 0.7rem;
+  color: var(--gold);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+h1,
+h2 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  margin: 0 0 0.85rem;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 7vw, 4.8rem);
+}
+
+h2 {
+  font-size: clamp(2rem, 5.2vw, 3.4rem);
+}
+
+.lede,
+.body,
+.quote,
+.cite,
+.play {
+  max-width: 42rem;
+}
+
+.lede,
+.body,
+.play {
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 1.05rem;
+}
+
+.quote {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(1.35rem, 2.6vw, 1.85rem);
+  font-style: italic;
+  line-height: 1.35;
+  margin: 0.4rem 0 0.5rem;
+  color: var(--ink);
+}
+
+.cite {
+  margin: 0 0 1.1rem;
+  color: var(--gold);
+  font-size: 0.88rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+  margin: 1.1rem 0 1rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.05rem 1.05rem;
+  border-radius: 2px;
+}
+
+.card--full {
+  grid-column: 1 / -1;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.card--was .label {
+  color: var(--was);
+}
+
+.card--now .label {
+  color: var(--became);
+}
+
+.card p {
+  margin: 0;
+  line-height: 1.45;
+  font-size: 0.98rem;
+}
+
+.card--now p {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.22rem;
+  font-style: italic;
+}
+
+.play {
+  margin: 0;
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--gold-dim);
+  color: var(--ink);
+}
+
+.agenda {
+  list-style: none;
+  margin: 1.2rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.agenda li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr;
+  gap: 0.8rem;
+  align-items: baseline;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.85rem;
+}
+
+.num {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: var(--gold);
+  font-size: 1.4rem;
+}
+
+.agenda strong {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.agenda span {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.cover-ornament {
+  width: 72px;
+  height: 1px;
+  background: var(--gold);
+  margin: 1.2rem 0 1.1rem;
+}
+
+.alts {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.4rem;
+}
+
+.alts p {
+  margin: 0;
+}
+
+.chrome {
+  position: relative;
+  padding-top: 0.7rem;
+}
+
+.progress {
+  position: absolute;
+  left: 0;
+  right: 5.6rem;
+  top: 0;
+  height: 2px;
+  background: var(--rule);
+}
+
+.progress__fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--gold);
+  transition: width 280ms ease;
+}
+
+.nav {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.nav__btn {
+  appearance: none;
+  width: 2.3rem;
+  height: 2.3rem;
+  border: 1px solid var(--gold-dim);
+  background: transparent;
+  color: var(--gold);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.nav__btn:hover,
+.nav__btn:focus-visible {
+  background: rgba(212, 176, 106, 0.1);
+}
+
+.nav__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.toc {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: rgba(8, 7, 6, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.toc[hidden] {
+  display: none;
+}
+
+.toc__panel {
+  width: min(36rem, 100%);
+  background: #171410;
+  border: 1px solid var(--rule);
+  padding: 1.3rem 1.4rem 1.1rem;
+  box-shadow: var(--shadow);
+}
+
+.toc__title {
+  margin: 0 0 0.8rem;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.7rem;
+}
+
+.toc__list {
+  margin: 0 0 1rem;
+  padding: 0 0 0 1.1rem;
+  max-height: 55dvh;
+  overflow: auto;
+  color: var(--muted);
+}
+
+.toc__list button {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.22rem 0;
+}
+
+.toc__list button:hover {
+  color: var(--gold);
+}
+
+.toc__close {
+  appearance: none;
+  border: 1px solid var(--gold-dim);
+  background: transparent;
+  color: var(--gold);
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .deck {
+    padding: 0.85rem 0.9rem 0.75rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hint {
+    max-width: 70%;
+    letter-spacing: 0.08em;
+    text-transform: none;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+  }
+
+  h2 {
+    font-size: 1.7rem;
+  }
+
+  .card--now p,
+  .quote {
+    font-size: 1.12rem;
+  }
+
+  .agenda li {
+    grid-template-columns: 2.2rem 1fr;
+  }
+}
