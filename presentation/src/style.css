@@ -301,8 +301,16 @@ h2 {
   border: 1px solid var(--gold-dim);
   background: transparent;
   color: var(--gold);
-  font-size: 1rem;
   cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.nav__btn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  display: block;
 }
 
 .nav__btn:hover,
