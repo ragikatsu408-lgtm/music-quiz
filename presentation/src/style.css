@@ -353,7 +353,7 @@ h2 {
 
 .toc__list {
   margin: 0 0 1rem;
-  padding: 0 0 0 1.1rem;
+  padding: 0 0 0 1.85rem;
   max-height: 55dvh;
   overflow: auto;
   color: var(--muted);
