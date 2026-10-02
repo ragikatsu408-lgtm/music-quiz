@@ -206,6 +206,47 @@ def main() -> None:
         write_wav(path, render(notes))
         print(f"wrote {path}")
 
+    sing_dir = os.path.join(out_dir, "sing")
+    os.makedirs(sing_dir, exist_ok=True)
+    for name, notes in SING_TRACKS.items():
+        path = os.path.abspath(os.path.join(sing_dir, f"{name}.wav"))
+        write_wav(path, render(notes))
+        print(f"wrote {path}")
+
+
+# Reference tones and short public-domain opera motifs for the singing mode.
+SING_TRACKS: dict[str, list[tuple[str | None, float]]] = {
+    "c4": [("C4", 1.5)],
+    "e4": [("E4", 1.5)],
+    "a4": [("A4", 1.5)],
+    "figaro": [
+        ("C5", 0.22),
+        ("C5", 0.22),
+        ("C5", 0.22),
+        ("C5", 0.4),
+        ("G4", 0.28),
+        ("E4", 0.28),
+        ("C4", 0.5),
+    ],
+    "habanera": [
+        ("D4", 0.36),
+        ("D4", 0.18),
+        ("D4", 0.18),
+        ("C#4", 0.36),
+        ("D4", 0.36),
+        ("F4", 0.5),
+    ],
+    "donna": [
+        ("B4", 0.28),
+        ("A4", 0.18),
+        ("G#4", 0.18),
+        ("A4", 0.28),
+        ("C5", 0.4),
+        ("B4", 0.22),
+        ("A4", 0.45),
+    ],
+}
+
 
 if __name__ == "__main__":
     main()

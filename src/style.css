@@ -327,9 +327,13 @@ button {
   max-height: min(420px, 70vw);
 }
 
-.picture-hint {
-  text-align: center;
-  margin: 0 0 16px;
+.sing-panel .actions {
+  margin-top: 4px;
+}
+
+.sing-panel .error-box {
+  width: 100%;
+  text-align: left;
 }
 
 .player {

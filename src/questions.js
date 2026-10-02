@@ -126,6 +126,13 @@ export const QUESTIONS = [
 
 export function scoreMessage(correct, total, kind = "melody") {
   const ratio = total === 0 ? 0 : correct / total;
+  if (kind === "sing") {
+    if (ratio === 1) return "Чистый унисон. Можно на бис.";
+    if (ratio >= 0.75) return "Хороший слух и голос. Ещё немного — и будет точно.";
+    if (ratio >= 0.5) return "Есть попадания. Слушайте образец и тяните ровнее.";
+    if (ratio > 0) return "Начало есть. Спойте ближе к микрофону и в ту же октаву.";
+    return "Пока мимо. Послушайте образец ещё раз и попробуйте спокойнее.";
+  }
   if (kind === "composer") {
     if (ratio === 1) return "Все портреты узнаны. Архив консерватории вами гордится.";
     if (ratio >= 0.75) return "Отличный глаз. Композиторы вам знакомы в лицо.";
@@ -376,5 +383,69 @@ export const COMPOSER_QUESTIONS = [
       { id: "d", text: "Джузеппе Верди" },
     ],
     correctId: "d",
+  },
+];
+
+/** Singing rounds: match a local reference tone or short opera phrase. */
+export const SING_QUESTIONS = [
+  {
+    id: "sing-c4",
+    kind: "note",
+    prompt: "Спойте эту ноту",
+    audio: "/audio/sing/c4.wav",
+    hint: "До (C4). Можно соседнюю октаву — главное попасть в ноту.",
+    targetNote: "C4",
+    targetNotes: ["C4"],
+    title: "Нота C4",
+  },
+  {
+    id: "sing-e4",
+    kind: "note",
+    prompt: "Спойте эту ноту",
+    audio: "/audio/sing/e4.wav",
+    hint: "Ми (E4). Тяните ровно пару секунд.",
+    targetNote: "E4",
+    targetNotes: ["E4"],
+    title: "Нота E4",
+  },
+  {
+    id: "sing-a4",
+    kind: "note",
+    prompt: "Спойте эту ноту",
+    audio: "/audio/sing/a4.wav",
+    hint: "Ля (A4) — камертон 440 Гц.",
+    targetNote: "A4",
+    targetNotes: ["A4"],
+    title: "Нота A4",
+  },
+  {
+    id: "sing-figaro",
+    kind: "phrase",
+    prompt: "Спойте короткую оперную фразу",
+    audio: "/audio/sing/figaro.wav",
+    hint: "«Фигаро» — мотив из «Севильского цирюльника».",
+    targetNote: "C5",
+    targetNotes: ["C5", "G4", "E4", "C4"],
+    title: "Фигаро",
+  },
+  {
+    id: "sing-habanera",
+    kind: "phrase",
+    prompt: "Спойте короткую оперную фразу",
+    audio: "/audio/sing/habanera.wav",
+    hint: "Хабанера из «Кармен».",
+    targetNote: "D4",
+    targetNotes: ["D4", "C#4", "F4"],
+    title: "Хабанера",
+  },
+  {
+    id: "sing-donna",
+    kind: "phrase",
+    prompt: "Спойте короткую оперную фразу",
+    audio: "/audio/sing/donna.wav",
+    hint: "«La donna è mobile» — Риголетто.",
+    targetNote: "A4",
+    targetNotes: ["B4", "A4", "G#4", "C5"],
+    title: "La donna è mobile",
   },
 ];
