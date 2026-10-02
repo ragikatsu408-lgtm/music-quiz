@@ -155,9 +155,9 @@ function stopRecording(scoreNow) {
   if (!question) return;
   const targetHz = noteFreq(question.targetNote);
   const result =
-    question.kind === "phrase"
-      ? scorePhrase(collectedPitches, question.targetNotes)
-      : scoreNote(collectedPitches, targetHz);
+    question.kind === "note"
+      ? scoreNote(collectedPitches, targetHz)
+      : scorePhrase(collectedPitches, question.targetNotes);
   if (result.reason === "quiet") {
     state.micError = "Не удалось разобрать высоту. Спойте громче и ближе к микрофону.";
     state.heardLabel = "";
@@ -169,9 +169,9 @@ function stopRecording(scoreNow) {
   const cents = Number.isFinite(result.cents) ? Math.round(result.cents) : "—";
   state.heardLabel = `${heard} (${formatHz(result.heardHz)})`;
   state.singDetail =
-    question.kind === "phrase"
-      ? `Цель: ${question.targetNotes.join(" · ")}. Услышали: ${state.heardLabel}. Совпало нот: ${result.hits}/${result.need}.`
-      : `Цель: ${question.targetNote} (${formatHz(targetHz)}). Услышали: ${state.heardLabel}, отклонение ${cents} центов.`;
+    question.kind === "note"
+      ? `Цель: ${question.targetNote} (${formatHz(targetHz)}). Услышали: ${state.heardLabel}, отклонение ${cents} центов.`
+      : `Цель: ${question.targetNotes.join(" · ")}. Услышали: ${state.heardLabel}. Совпало нот: ${result.hits}/${result.need}.`;
   finishSingRound(result.ok);
 }
 
@@ -552,8 +552,16 @@ function renderQuiz() {
 
   const listenLabel = singing
     ? state.playing
-      ? "Играет образец…"
-      : "Слушать образец"
+      ? question.kind === "note"
+        ? "Играет нота…"
+        : question.kind === "song"
+          ? "Играет песня…"
+          : "Играет образец…"
+      : question.kind === "note"
+        ? "1. Слушать ноту"
+        : question.kind === "song"
+          ? "1. Слушать песню"
+          : "Слушать образец"
     : state.playing
       ? "Играет фрагмент…"
       : "Слушать фрагмент";
@@ -601,10 +609,17 @@ function renderQuiz() {
 }
 
 function renderSingPanel(question, listenLabel) {
-  const target =
-    question.kind === "phrase"
-      ? question.targetNotes.join(" · ")
-      : `${question.targetNote} · ${formatHz(noteFreq(question.targetNote))}`;
+  const isNote = question.kind === "note";
+  const isSong = question.kind === "song";
+  const target = isNote
+    ? `${question.targetNote} · ${formatHz(noteFreq(question.targetNote))}`
+    : question.targetNotes.join(" · ");
+  const steps = isNote
+    ? "Сначала послушайте ноту, затем нажмите «2. Запись» и спойте её."
+    : isSong
+      ? "Сначала послушайте песню, затем спойте этот фрагмент сами."
+      : "Нажмите «Запись» и спойте в микрофон.";
+  const recordLabel = state.recording ? "Стоп" : isNote || isSong ? "2. Запись" : "Запись";
   const micError = state.micError
     ? `<div class="error-box" role="alert">${escapeHtml(state.micError)}
         <div class="actions" style="margin-top:10px">
@@ -614,7 +629,7 @@ function renderSingPanel(question, listenLabel) {
     : "";
   const recordBtn = state.recording
     ? `<button class="btn btn-primary" data-action="sing-stop">Стоп</button>`
-    : `<button class="btn btn-primary" data-action="sing-record" ${state.locked ? "disabled" : ""}>Запись</button>`;
+    : `<button class="btn btn-primary" data-action="sing-record" ${state.locked ? "disabled" : ""}>${recordLabel}</button>`;
   return `
     <div class="player ${state.playing || state.recording ? "playing" : ""} sing-panel">
       <div class="waveform" aria-hidden="true">
@@ -626,7 +641,7 @@ function renderSingPanel(question, listenLabel) {
           ? `Слышу: ${escapeHtml(state.livePitch || "…")} · ${formatHz(state.liveHz)}`
           : state.heardLabel
             ? `Услышали: ${escapeHtml(state.heardLabel)}`
-            : "Нажмите «Запись» и спойте в микрофон."
+            : escapeHtml(steps)
       }</p>
       <p class="hint" data-sing-timer hidden>Время вышло — запись всё равно можно сделать.</p>
       ${micError}
