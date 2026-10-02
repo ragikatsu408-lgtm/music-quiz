@@ -124,11 +124,134 @@ export const QUESTIONS = [
   },
 ];
 
-export function scoreMessage(correct, total) {
+export function scoreMessage(correct, total, kind = "melody") {
   const ratio = total === 0 ? 0 : correct / total;
+  if (kind === "picture") {
+    if (ratio === 1) return "Все инструменты узнаны с первого взгляда.";
+    if (ratio >= 0.75) return "Отличный глаз. Оркестр вами доволен.";
+    if (ratio >= 0.5) return "Неплохо. Ещё круг — и названия сядут лучше.";
+    if (ratio > 0) return "Есть попадания. Смотрите на форму корпуса и клавиши.";
+    return "Пока мимо. Вглядитесь в фото и попробуйте снова.";
+  }
   if (ratio === 1) return "Идеальный слух. Все фрагменты угаданы.";
   if (ratio >= 0.75) return "Отличный результат. Концертмейстер аплодирует.";
   if (ratio >= 0.5) return "Хороший слух. Ещё один круг — и будет увереннее.";
   if (ratio > 0) return "Есть попадания. Переслушайте фрагменты и попробуйте снова.";
   return "Пока мимо. Включите звук, слушайте спокойно и начните заново.";
 }
+
+/** Picture-only rounds: guess the instrument. No audio. */
+export const INSTRUMENT_QUESTIONS = [
+  {
+    id: "violin",
+    prompt: "Какой это инструмент?",
+    image: "/images/guess-violin.jpg",
+    imageAlt: "Скрипка",
+    hint: "Смычковые",
+    choices: [
+      { id: "a", text: "Скрипка" },
+      { id: "b", text: "Альт" },
+      { id: "c", text: "Виолончель" },
+      { id: "d", text: "Контрабас" },
+    ],
+    correctId: "a",
+  },
+  {
+    id: "guitar",
+    prompt: "Какой это инструмент?",
+    image: "/images/guess-guitar.jpg",
+    imageAlt: "Акустическая гитара",
+    hint: "Струнные щипковые",
+    choices: [
+      { id: "a", text: "Укулеле" },
+      { id: "b", text: "Балалайка" },
+      { id: "c", text: "Акустическая гитара" },
+      { id: "d", text: "Мандолина" },
+    ],
+    correctId: "c",
+  },
+  {
+    id: "flute",
+    prompt: "Какой это инструмент?",
+    image: "/images/guess-flute.jpg",
+    imageAlt: "Флейта",
+    hint: "Деревянные духовые",
+    choices: [
+      { id: "a", text: "Кларнет" },
+      { id: "b", text: "Флейта" },
+      { id: "c", text: "Гобой" },
+      { id: "d", text: "Фагот" },
+    ],
+    correctId: "b",
+  },
+  {
+    id: "trumpet",
+    prompt: "Какой это инструмент?",
+    image: "/images/guess-trumpet.jpg",
+    imageAlt: "Труба",
+    hint: "Медные духовые",
+    choices: [
+      { id: "a", text: "Валторна" },
+      { id: "b", text: "Тромбон" },
+      { id: "c", text: "Туба" },
+      { id: "d", text: "Труба" },
+    ],
+    correctId: "d",
+  },
+  {
+    id: "accordion",
+    prompt: "Какой это инструмент?",
+    image: "/images/guess-accordion.jpg",
+    imageAlt: "Аккордеон",
+    hint: "Клавиши и меха",
+    choices: [
+      { id: "a", text: "Аккордеон" },
+      { id: "b", text: "Гармонь" },
+      { id: "c", text: "Орга́н" },
+      { id: "d", text: "Синтезатор" },
+    ],
+    correctId: "a",
+  },
+  {
+    id: "harp",
+    prompt: "Какой это инструмент?",
+    image: "/images/guess-harp.jpg",
+    imageAlt: "Арфа",
+    hint: "Большой щипковый",
+    choices: [
+      { id: "a", text: "Лира" },
+      { id: "b", text: "Арфа" },
+      { id: "c", text: "Цитра" },
+      { id: "d", text: "Гусли" },
+    ],
+    correctId: "b",
+  },
+  {
+    id: "drum",
+    prompt: "Какой это инструмент?",
+    image: "/images/guess-drum.jpg",
+    imageAlt: "Малый барабан",
+    hint: "Ударные",
+    choices: [
+      { id: "a", text: "Литавры" },
+      { id: "b", text: "Тарелки" },
+      { id: "c", text: "Малый барабан" },
+      { id: "d", text: "Ксилофон" },
+    ],
+    correctId: "c",
+  },
+  {
+    id: "saxophone",
+    prompt: "Какой это инструмент?",
+    image: "/images/guess-saxophone.jpg",
+    imageAlt: "Саксофон",
+    hint: "Язычковый духовой",
+    choices: [
+      { id: "a", text: "Кларнет" },
+      { id: "b", text: "Фагот" },
+      { id: "c", text: "Английский рожок" },
+      { id: "d", text: "Саксофон" },
+    ],
+    correctId: "d",
+  },
+];

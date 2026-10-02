@@ -1,5 +1,5 @@
 import "./style.css";
-import { QUESTIONS, QUESTION_SECONDS, scoreMessage } from "./questions.js";
+import { INSTRUMENT_QUESTIONS, QUESTIONS, QUESTION_SECONDS, scoreMessage } from "./questions.js";
 import { fetchLeaderboard, getPlayerLabel, saveScore } from "./supabase.js";
 
 const app = document.querySelector("#app");
@@ -22,6 +22,7 @@ const state = {
   boardError: "",
   boardRows: [],
   boardFrom: "home",
+  mode: "melody",
 };
 
 let timerId = null;
@@ -41,8 +42,12 @@ function stopAudio() {
   state.playing = false;
 }
 
+function currentDeck() {
+  return state.mode === "picture" ? INSTRUMENT_QUESTIONS : QUESTIONS;
+}
+
 function currentQuestion() {
-  return QUESTIONS[state.index];
+  return currentDeck()[state.index];
 }
 
 function startTimer() {
@@ -62,7 +67,7 @@ function startTimer() {
 
 async function playClip() {
   const question = currentQuestion();
-  if (!question) return;
+  if (!question?.audio) return;
   state.audioError = "";
   stopAudio();
   audio = new Audio(question.audio);
@@ -101,7 +106,7 @@ function lockAnswer(choiceId, timedOut = false) {
   stopAudio();
   render();
   window.setTimeout(() => {
-    if (state.index + 1 >= QUESTIONS.length) {
+    if (state.index + 1 >= currentDeck().length) {
       finishQuiz();
       return;
     }
@@ -125,7 +130,7 @@ async function persistScore() {
     await saveScore({
       player: state.playerName,
       score: state.score,
-      total: QUESTIONS.length,
+      total: currentDeck().length,
     });
     state.saveStatus = "saved";
     state.saveError = "";
@@ -145,7 +150,7 @@ function beginQuestion() {
   state.playing = false;
   startTimer();
   render();
-  playClip();
+  if (currentQuestion()?.audio) playClip();
 }
 
 function readPlayerNameFromForm() {
@@ -153,9 +158,11 @@ function readPlayerNameFromForm() {
   if (input) state.playerName = input.value;
 }
 
-function startQuiz() {
+function startQuiz(mode = state.mode || "melody") {
   readPlayerNameFromForm();
-  if (!QUESTIONS.length) {
+  state.mode = mode === "picture" ? "picture" : "melody";
+  const deck = currentDeck();
+  if (!deck.length) {
     state.screen = "empty";
     render();
     return;
@@ -238,15 +245,15 @@ function renderHome() {
   return `
     ${brand()}
     <section class="card">
-      <h1>Угадайте мелодию за 15 секунд</h1>
+      <h1>Музыкальная викторина</h1>
       <p class="lede">
-        Восемь коротких фрагментов — классика и народные песни. Звук уже в приложении,
-        интернет для музыки не нужен.
+        Восемь мелодий по фрагменту или восемь инструментов по фото. Звук и картинки уже в приложении,
+        внешние сервисы для игры не нужны.
       </p>
       <ul class="rules">
         <li><span class="dot"></span>Четыре варианта ответа на каждый вопрос</li>
         <li><span class="dot"></span>Таймер 15 секунд: тишина тоже считается ответом</li>
-        <li><span class="dot"></span>Фрагмент можно переслушать, пока время идёт</li>
+        <li><span class="dot"></span>Мелодии — по фрагменту; инструменты — только по фото, без звука</li>
       </ul>
       <label class="field">
         <span>Ваше имя для таблицы счёта</span>
@@ -260,7 +267,8 @@ function renderHome() {
         />
       </label>
       <div class="actions">
-        <button class="btn btn-primary" data-action="start">Начать игру</button>
+        <button class="btn btn-primary" data-action="start">Угадать мелодию</button>
+        <button class="btn btn-primary" data-action="picture">Угадать инструмент</button>
         <button class="btn btn-ghost" data-action="leaderboard">Таблица лидеров</button>
       </div>
     </section>
@@ -287,7 +295,9 @@ function circumference() {
 function renderQuiz() {
   const question = currentQuestion();
   if (!question) return renderEmpty();
-  const total = QUESTIONS.length;
+  const deck = currentDeck();
+  const total = deck.length;
+  const pictureClue = state.mode === "picture";
   const dash = circumference();
   const progress = state.remaining / QUESTION_SECONDS;
   const offset = dash * (1 - progress);
@@ -311,7 +321,7 @@ function renderQuiz() {
   } else if (state.locked && state.selectedId === question.correctId) {
     status = `<p class="status ok">Верно. Идём дальше.</p>`;
   } else if (state.locked) {
-    status = `<p class="status bad">Не тот фрагмент. Правильный вариант выделен.</p>`;
+    status = `<p class="status bad">Не тот ответ. Правильный вариант выделен.</p>`;
   }
 
   const error = state.audioError
@@ -323,8 +333,20 @@ function renderQuiz() {
     question.choices.find((c) => c.id === question.correctId)?.text ||
     question.id;
   const art = question.image
-    ? `<img class="question-art" src="${escapeHtml(question.image)}" alt="${escapeHtml(title)}" />`
+    ? `<img class="question-art${pictureClue ? " clue" : ""}" src="${escapeHtml(question.image)}" alt="${escapeHtml(title)}" />`
     : "";
+
+  const player = pictureClue
+    ? `<p class="hint picture-hint">Подсказка: ${escapeHtml(question.hint)}</p>`
+    : `<div class="player ${state.playing ? "playing" : ""}">
+        <div class="waveform" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <button class="btn btn-ghost" data-action="replay" ${state.locked ? "disabled" : ""}>
+          ${state.playing ? "Играет фрагмент…" : "Слушать фрагмент"}
+        </button>
+        <p class="hint">Подсказка: ${escapeHtml(question.hint)}</p>
+      </div>`;
 
   return `
     ${brand()}
@@ -347,15 +369,7 @@ function renderQuiz() {
       </div>
       ${art}
       ${error}
-      <div class="player ${state.playing ? "playing" : ""}">
-        <div class="waveform" aria-hidden="true">
-          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <button class="btn btn-ghost" data-action="replay" ${state.locked ? "disabled" : ""}>
-          ${state.playing ? "Играет фрагмент…" : "Слушать фрагмент"}
-        </button>
-        <p class="hint">Подсказка: ${escapeHtml(question.hint)}</p>
-      </div>
+      ${player}
       <div class="choices">${choices}</div>
       ${status}
     </section>
@@ -363,7 +377,7 @@ function renderQuiz() {
 }
 
 function renderResults() {
-  const total = QUESTIONS.length;
+  const total = currentDeck().length;
   const recap = state.answers
     .map((item, i) => {
       const mark = item.timedOut ? "время" : item.correct ? "верно" : "ошибка";
@@ -378,7 +392,7 @@ function renderResults() {
       <div class="score-hero">
         <div class="big">${state.score}/${total}</div>
         <h2>Итоги раунда</h2>
-        <p class="lede">${escapeHtml(scoreMessage(state.score, total))}</p>
+        <p class="lede">${escapeHtml(scoreMessage(state.score, total, state.mode))}</p>
         <p class="muted">${escapeHtml(getPlayerLabel(state.playerName))} · ${state.score} из ${total}</p>
       </div>
       ${renderSaveNotice()}
@@ -388,7 +402,9 @@ function renderResults() {
           : `<div class="state"><p>Ответов пока нет — раунд оборвался до первого вопроса.</p></div>`
       }
       <div class="actions">
-        <button class="btn btn-primary" data-action="start">Сыграть ещё раз</button>
+        <button class="btn btn-primary" data-action="${
+          state.mode === "picture" ? "picture" : "start"
+        }">Сыграть ещё раз</button>
         <button class="btn btn-ghost" data-action="leaderboard">Таблица лидеров</button>
         <button class="btn btn-ghost" data-action="home">На главную</button>
       </div>
@@ -485,7 +501,8 @@ function render() {
 app.addEventListener("click", (event) => {
   const target = event.target.closest("[data-action], [data-choice]");
   if (!target) return;
-  if (target.dataset.action === "start") startQuiz();
+  if (target.dataset.action === "start") startQuiz("melody");
+  if (target.dataset.action === "picture") startQuiz("picture");
   if (target.dataset.action === "home") goHome();
   if (target.dataset.action === "leaderboard") openLeaderboard();
   if (target.dataset.action === "board-back") closeLeaderboard();
@@ -493,7 +510,7 @@ app.addEventListener("click", (event) => {
   if (target.dataset.choice) lockAnswer(target.dataset.choice);
 });
 
-if (!QUESTIONS.length) {
+if (!QUESTIONS.length && !INSTRUMENT_QUESTIONS.length) {
   state.screen = "empty";
 }
 
