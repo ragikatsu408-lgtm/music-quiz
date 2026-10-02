@@ -37,6 +37,9 @@ function describeSupabaseError(error, fallback) {
   if (denied) {
     return "Чтение таблицы scores запрещено (RLS или GRANT). Выполните supabase/scores.sql в SQL Editor.";
   }
+  if (/failed to fetch|networkerror|load failed/i.test(message)) {
+    return "Нет связи с Supabase. Проверьте интернет и адрес проекта.";
+  }
   return message || fallback;
 }
 
