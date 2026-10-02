@@ -25,6 +25,21 @@ function getClient() {
   return client;
 }
 
+function describeSupabaseError(error, fallback) {
+  const message = error?.message || "";
+  const code = String(error?.code || "");
+  const status = error?.status;
+  const denied =
+    status === 401 ||
+    status === 403 ||
+    code === "42501" ||
+    /permission denied|row-level security|not allowed|rls/i.test(message);
+  if (denied) {
+    return "Чтение таблицы scores запрещено (RLS или GRANT). Выполните supabase/scores.sql в SQL Editor.";
+  }
+  return message || fallback;
+}
+
 export async function saveScore({ player, score, total }) {
   const supabase = getClient();
   const { error } = await supabase.from("scores").insert({
@@ -33,6 +48,20 @@ export async function saveScore({ player, score, total }) {
     total,
   });
   if (error) {
-    throw new Error(error.message || "Supabase отклонил запись счёта.");
+    throw new Error(describeSupabaseError(error, "Supabase отклонил запись счёта."));
   }
+}
+
+export async function fetchLeaderboard(limit = 10) {
+  const supabase = getClient();
+  const { data, error } = await supabase
+    .from("scores")
+    .select("id, player, score, total, created_at")
+    .order("score", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    throw new Error(describeSupabaseError(error, "Не удалось загрузить таблицу лидеров."));
+  }
+  return Array.isArray(data) ? data : [];
 }

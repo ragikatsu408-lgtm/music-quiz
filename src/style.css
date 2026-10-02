@@ -177,6 +177,52 @@ h2 {
   color: var(--mint);
 }
 
+.board {
+  list-style: none;
+  margin: 0 0 22px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.board li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.board .rank {
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.board .who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.board .who strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board .when {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.board .pts {
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

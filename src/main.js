@@ -1,6 +1,6 @@
 import "./style.css";
 import { QUESTIONS, QUESTION_SECONDS, scoreMessage } from "./questions.js";
-import { getPlayerLabel, saveScore } from "./supabase.js";
+import { fetchLeaderboard, getPlayerLabel, saveScore } from "./supabase.js";
 
 const app = document.querySelector("#app");
 
@@ -18,6 +18,10 @@ const state = {
   playerName: "",
   saveStatus: "idle",
   saveError: "",
+  boardStatus: "idle",
+  boardError: "",
+  boardRows: [],
+  boardFrom: "home",
 };
 
 let timerId = null;
@@ -176,6 +180,40 @@ function goHome() {
   render();
 }
 
+function openLeaderboard() {
+  readPlayerNameFromForm();
+  stopTimer();
+  stopAudio();
+  if (state.screen === "results") state.boardFrom = "results";
+  else if (state.screen !== "leaderboard") state.boardFrom = "home";
+  state.screen = "leaderboard";
+  state.boardStatus = "loading";
+  state.boardError = "";
+  state.boardRows = [];
+  render();
+  loadLeaderboard();
+}
+
+function closeLeaderboard() {
+  state.screen = state.boardFrom === "results" ? "results" : "home";
+  render();
+}
+
+async function loadLeaderboard() {
+  try {
+    const rows = await fetchLeaderboard(10);
+    state.boardRows = rows;
+    state.boardStatus = rows.length ? "ready" : "empty";
+    state.boardError = "";
+  } catch (error) {
+    state.boardRows = [];
+    state.boardStatus = "error";
+    state.boardError =
+      error?.message || "Не удалось загрузить таблицу лидеров. Проверьте сеть и RLS.";
+  }
+  if (state.screen === "leaderboard") render();
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -223,6 +261,7 @@ function renderHome() {
       </label>
       <div class="actions">
         <button class="btn btn-primary" data-action="start">Начать игру</button>
+        <button class="btn btn-ghost" data-action="leaderboard">Таблица лидеров</button>
       </div>
     </section>
   `;
@@ -341,7 +380,67 @@ function renderResults() {
       }
       <div class="actions">
         <button class="btn btn-primary" data-action="start">Сыграть ещё раз</button>
+        <button class="btn btn-ghost" data-action="leaderboard">Таблица лидеров</button>
         <button class="btn btn-ghost" data-action="home">На главную</button>
+      </div>
+    </section>
+  `;
+}
+
+function formatBoardTime(iso) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("ru-RU", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function renderLeaderboard() {
+  let body = "";
+  if (state.boardStatus === "loading") {
+    body = `<p class="save-note">Загружаем таблицу лидеров…</p>`;
+  } else if (state.boardStatus === "error") {
+    body = `<div class="error-box" role="alert">${escapeHtml(state.boardError)}</div>
+      <div class="actions" style="margin-bottom:16px">
+        <button class="btn btn-ghost" data-action="leaderboard">Повторить</button>
+      </div>`;
+  } else if (state.boardStatus === "empty") {
+    body = `<div class="state"><p>Пока нет сохранённых результатов. Сыграйте раунд — имя появится здесь.</p></div>`;
+  } else {
+    const rows = state.boardRows
+      .map((row, i) => {
+        const player = escapeHtml(getPlayerLabel(row.player));
+        const score = Number.isFinite(row.score) ? row.score : "—";
+        const total = Number.isFinite(row.total) ? ` / ${row.total}` : "";
+        const when = formatBoardTime(row.created_at);
+        return `<li>
+          <span class="rank">${i + 1}</span>
+          <span class="who">
+            <strong>${player}</strong>
+            ${when ? `<span class="when">${escapeHtml(when)}</span>` : ""}
+          </span>
+          <span class="pts">${score}${total}</span>
+        </li>`;
+      })
+      .join("");
+    body = `<ol class="board">${rows}</ol>`;
+  }
+
+  const backLabel = state.boardFrom === "results" ? "К итогам" : "На главную";
+  const backAction = state.boardFrom === "results" ? "board-back" : "home";
+
+  return `
+    ${brand()}
+    <section class="card">
+      <h1>Таблица лидеров</h1>
+      <p class="lede">Десять лучших результатов: сначала счёт, при равенстве — более свежая запись.</p>
+      ${body}
+      <div class="actions">
+        <button class="btn btn-ghost" data-action="${backAction}">${backLabel}</button>
       </div>
     </section>
   `;
@@ -366,9 +465,11 @@ function render() {
       ? renderQuiz()
       : state.screen === "results"
         ? renderResults()
-        : state.screen === "empty"
-          ? renderEmpty()
-          : renderHome();
+        : state.screen === "leaderboard"
+          ? renderLeaderboard()
+          : state.screen === "empty"
+            ? renderEmpty()
+            : renderHome();
   app.innerHTML = `<main class="shell">${view}</main>`;
 }
 
@@ -377,6 +478,8 @@ app.addEventListener("click", (event) => {
   if (!target) return;
   if (target.dataset.action === "start") startQuiz();
   if (target.dataset.action === "home") goHome();
+  if (target.dataset.action === "leaderboard") openLeaderboard();
+  if (target.dataset.action === "board-back") closeLeaderboard();
   if (target.dataset.action === "replay") playClip();
   if (target.dataset.choice) lockAnswer(target.dataset.choice);
 });

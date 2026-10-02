@@ -12,16 +12,20 @@ create table if not exists public.scores (
 
 alter table public.scores enable row level security;
 
+grant usage on schema public to anon, authenticated;
+grant select, insert on table public.scores to anon, authenticated;
+
 drop policy if exists "anon can insert scores" on public.scores;
 create policy "anon can insert scores"
   on public.scores
   for insert
-  to anon
+  to anon, authenticated
   with check (true);
 
+-- Нужно для таблицы лидеров: без SELECT политика скрывает все строки или даёт permission denied.
 drop policy if exists "anon can read scores" on public.scores;
 create policy "anon can read scores"
   on public.scores
   for select
-  to anon
+  to anon, authenticated
   using (true);
