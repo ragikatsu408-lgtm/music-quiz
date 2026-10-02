@@ -44,27 +44,35 @@ function describeSupabaseError(error, fallback) {
 }
 
 export async function saveScore({ player, score, total }) {
-  const supabase = getClient();
-  const { error } = await supabase.from("scores").insert({
-    player: getPlayerLabel(player),
-    score,
-    total,
-  });
-  if (error) {
+  try {
+    const supabase = getClient();
+    const { error } = await supabase.from("scores").insert({
+      player: getPlayerLabel(player),
+      score,
+      total,
+    });
+    if (error) {
+      throw new Error(describeSupabaseError(error, "Supabase отклонил запись счёта."));
+    }
+  } catch (error) {
     throw new Error(describeSupabaseError(error, "Supabase отклонил запись счёта."));
   }
 }
 
 export async function fetchLeaderboard(limit = 10) {
-  const supabase = getClient();
-  const { data, error } = await supabase
-    .from("scores")
-    .select("id, player, score, total, created_at")
-    .order("score", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) {
+  try {
+    const supabase = getClient();
+    const { data, error } = await supabase
+      .from("scores")
+      .select("id, player, score, total, created_at")
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) {
+      throw new Error(describeSupabaseError(error, "Не удалось загрузить таблицу лидеров."));
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
     throw new Error(describeSupabaseError(error, "Не удалось загрузить таблицу лидеров."));
   }
-  return Array.isArray(data) ? data : [];
 }
