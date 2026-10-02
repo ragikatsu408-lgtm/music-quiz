@@ -63,4 +63,5 @@ npm run preview
 - `supabase/scores.sql` — схема таблицы `scores` и RLS для anon
 - `.env.example` — шаблон URL и пустого anon key
 - `public/audio/` — WAV-фрагменты
+- `public/images/` — иллюстрации инструментов к вопросам
 - `scripts/generate-audio.py` — генератор тех же фрагментов

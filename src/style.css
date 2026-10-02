@@ -302,6 +302,21 @@ button {
   color: var(--danger);
 }
 
+.question-art {
+  display: block;
+  margin: 0 auto 16px;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: min(280px, 42vw);
+  object-fit: cover;
+  object-position: center;
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--stroke);
+  background: rgba(8, 5, 16, 0.45);
+}
+
 .player {
   display: grid;
   gap: 14px;
@@ -465,5 +480,10 @@ button {
 
   .choice {
     font-size: 14px;
+  }
+
+  .question-art {
+    max-height: 180px;
+    border-radius: 16px;
   }
 }

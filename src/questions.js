@@ -7,6 +7,8 @@ export const QUESTIONS = [
     prompt: "Какое это произведение?",
     audio: "/audio/ode-to-joy.wav",
     hint: "Симфония № 9",
+    image: "/images/ode-to-joy.jpg",
+    imageAlt: "Симфонический оркестр — Ода к радости",
     choices: [
       { id: "a", text: "Ода к радости — Бетховен" },
       { id: "b", text: "Лунная соната — Бетховен" },
@@ -20,6 +22,8 @@ export const QUESTIONS = [
     prompt: "Угадайте пьесу по мелодии",
     audio: "/audio/fur-elise.wav",
     hint: "Фортепиано, начало XIX века",
+    image: "/images/fur-elise.jpg",
+    imageAlt: "Рояль — К Элизе",
     choices: [
       { id: "a", text: "Ноктюрн cis-moll — Шопен" },
       { id: "b", text: "К Элизе — Бетховен" },
@@ -33,6 +37,8 @@ export const QUESTIONS = [
     prompt: "Что звучит в этом фрагменте?",
     audio: "/audio/turkish-march.wav",
     hint: "Рондо из сонаты",
+    image: "/images/turkish-march.jpg",
+    imageAlt: "Фортепиано — Турецкий марш",
     choices: [
       { id: "a", text: "Марш Радецкого — Штраус" },
       { id: "b", text: "Венгерский танец № 5 — Брамс" },
@@ -46,6 +52,8 @@ export const QUESTIONS = [
     prompt: "Какой это сюжет в музыке?",
     audio: "/audio/mountain-king.wav",
     hint: "Сюита «Пер Гюнт»",
+    image: "/images/mountain-king.jpg",
+    imageAlt: "Оркестр — В пещере горного короля",
     choices: [
       { id: "a", text: "Полёт шмеля — Римский-Корсаков" },
       { id: "b", text: "Ночь на Лысой горе — Мусоргский" },
@@ -59,6 +67,8 @@ export const QUESTIONS = [
     prompt: "Из какого балета эта тема?",
     audio: "/audio/sugar-plum.wav",
     hint: "Челеста",
+    image: "/images/sugar-plum.jpg",
+    imageAlt: "Челеста — Танец феи Драже",
     choices: [
       { id: "a", text: "Танец феи Драже — Чайковский" },
       { id: "b", text: "Лебединое озеро — Чайковский" },
@@ -72,6 +82,8 @@ export const QUESTIONS = [
     prompt: "Какая это народная песня?",
     audio: "/audio/kalinka.wav",
     hint: "Русский фольклор",
+    image: "/images/kalinka.jpg",
+    imageAlt: "Балалайка — Калинка",
     choices: [
       { id: "a", text: "Катюша" },
       { id: "b", text: "Калинка" },
@@ -85,6 +97,8 @@ export const QUESTIONS = [
     prompt: "Узнаёте детскую песню?",
     audio: "/audio/yolochka.wav",
     hint: "Новогодняя классика",
+    image: "/images/yolochka.jpg",
+    imageAlt: "Ёлочка и пианино — В лесу родилась ёлочка",
     choices: [
       { id: "a", text: "Пусть бегут неуклюже" },
       { id: "b", text: "Маленькой ёлочке холодно зимой" },
@@ -98,6 +112,8 @@ export const QUESTIONS = [
     prompt: "Какой органно-клавирный шедевр?",
     audio: "/audio/toccata.wav",
     hint: "Барокко",
+    image: "/images/toccata.jpg",
+    imageAlt: "Орган — Токката и фуга ре минор",
     choices: [
       { id: "a", text: "Токката и фуга ре минор — Бах" },
       { id: "b", text: "Мессия. Аллилуйя — Гендель" },

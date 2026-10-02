@@ -318,6 +318,14 @@ function renderQuiz() {
     ? `<div class="error-box" role="alert">${escapeHtml(state.audioError)}</div>`
     : "";
 
+  const title =
+    question.imageAlt ||
+    question.choices.find((c) => c.id === question.correctId)?.text ||
+    question.id;
+  const art = question.image
+    ? `<img class="question-art" src="${escapeHtml(question.image)}" alt="${escapeHtml(title)}" />`
+    : "";
+
   return `
     ${brand()}
     <section class="card">
@@ -337,6 +345,7 @@ function renderQuiz() {
           <div class="timer-text">${state.remaining}</div>
         </div>
       </div>
+      ${art}
       ${error}
       <div class="player ${state.playing ? "playing" : ""}">
         <div class="waveform" aria-hidden="true">
