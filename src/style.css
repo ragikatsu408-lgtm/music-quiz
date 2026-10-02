@@ -322,6 +322,11 @@ button {
   margin-bottom: 12px;
 }
 
+.question-art.portrait {
+  object-position: top center;
+  max-height: min(420px, 70vw);
+}
+
 .picture-hint {
   text-align: center;
   margin: 0 0 16px;
@@ -499,5 +504,9 @@ button {
 
   .question-art.clue {
     max-height: 220px;
+  }
+
+  .question-art.portrait {
+    max-height: 260px;
   }
 }

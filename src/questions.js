@@ -126,6 +126,13 @@ export const QUESTIONS = [
 
 export function scoreMessage(correct, total, kind = "melody") {
   const ratio = total === 0 ? 0 : correct / total;
+  if (kind === "composer") {
+    if (ratio === 1) return "Все портреты узнаны. Архив консерватории вами гордится.";
+    if (ratio >= 0.75) return "Отличный глаз. Композиторы вам знакомы в лицо.";
+    if (ratio >= 0.5) return "Неплохо. Смотрите на причёску, воротник и эпоху.";
+    if (ratio > 0) return "Есть попадания. Сравните парики, бороды и костюмы.";
+    return "Пока мимо. Вглядитесь в портрет и попробуйте снова.";
+  }
   if (kind === "picture") {
     if (ratio === 1) return "Все инструменты узнаны с первого взгляда.";
     if (ratio >= 0.75) return "Отличный глаз. Оркестр вами доволен.";
@@ -251,6 +258,122 @@ export const INSTRUMENT_QUESTIONS = [
       { id: "b", text: "Фагот" },
       { id: "c", text: "Английский рожок" },
       { id: "d", text: "Саксофон" },
+    ],
+    correctId: "d",
+  },
+];
+
+/** Picture-only rounds: guess the composer. No audio. */
+export const COMPOSER_QUESTIONS = [
+  {
+    id: "beethoven",
+    prompt: "Кто изображён на портрете?",
+    image: "/images/composer-beethoven.jpg",
+    imageAlt: "Людвиг ван Бетховен",
+    hint: "Венская классика",
+    choices: [
+      { id: "a", text: "Людвиг ван Бетховен" },
+      { id: "b", text: "Йозеф Гайдн" },
+      { id: "c", text: "Франц Шуберт" },
+      { id: "d", text: "Роберт Шуман" },
+    ],
+    correctId: "a",
+  },
+  {
+    id: "mozart",
+    prompt: "Кто изображён на портрете?",
+    image: "/images/composer-mozart.jpg",
+    imageAlt: "Вольфганг Амадей Моцарт",
+    hint: "XVIII век, Зальцбург",
+    choices: [
+      { id: "a", text: "Антонио Сальери" },
+      { id: "b", text: "Вольфганг Амадей Моцарт" },
+      { id: "c", text: "Георг Фридрих Гендель" },
+      { id: "d", text: "Кристоф Виллибальд Глюк" },
+    ],
+    correctId: "b",
+  },
+  {
+    id: "bach",
+    prompt: "Кто изображён на портрете?",
+    image: "/images/composer-bach.jpg",
+    imageAlt: "Иоганн Себастьян Бах",
+    hint: "Немецкое барокко",
+    choices: [
+      { id: "a", text: "Георг Филипп Телеман" },
+      { id: "b", text: "Генрих Шютц" },
+      { id: "c", text: "Иоганн Себастьян Бах" },
+      { id: "d", text: "Дитрих Букстехуде" },
+    ],
+    correctId: "c",
+  },
+  {
+    id: "tchaikovsky",
+    prompt: "Кто изображён на портрете?",
+    image: "/images/composer-tchaikovsky.jpg",
+    imageAlt: "Пётр Ильич Чайковский",
+    hint: "Русский романтизм",
+    choices: [
+      { id: "a", text: "Модест Мусоргский" },
+      { id: "b", text: "Николай Римский-Корсаков" },
+      { id: "c", text: "Александр Бородин" },
+      { id: "d", text: "Пётр Ильич Чайковский" },
+    ],
+    correctId: "d",
+  },
+  {
+    id: "chopin",
+    prompt: "Кто изображён на портрете?",
+    image: "/images/composer-chopin.jpg",
+    imageAlt: "Фридерик Шопен",
+    hint: "Фортепиано, XIX век",
+    choices: [
+      { id: "a", text: "Фридерик Шопен" },
+      { id: "b", text: "Ференц Лист" },
+      { id: "c", text: "Роберт Шуман" },
+      { id: "d", text: "Феликс Мендельсон" },
+    ],
+    correctId: "a",
+  },
+  {
+    id: "vivaldi",
+    prompt: "Кто изображён на портрете?",
+    image: "/images/composer-vivaldi.jpg",
+    imageAlt: "Антонио Вивальди",
+    hint: "Итальянское барокко",
+    choices: [
+      { id: "a", text: "Арканжело Корелли" },
+      { id: "b", text: "Антонио Вивальди" },
+      { id: "c", text: "Доменико Скарлатти" },
+      { id: "d", text: "Джованни Перголези" },
+    ],
+    correctId: "b",
+  },
+  {
+    id: "schubert",
+    prompt: "Кто изображён на портрете?",
+    image: "/images/composer-schubert.jpg",
+    imageAlt: "Франц Шуберт",
+    hint: "Вена, песни и рояль",
+    choices: [
+      { id: "a", text: "Карл Мария фон Вебер" },
+      { id: "b", text: "Иоганнес Брамс" },
+      { id: "c", text: "Франц Шуберт" },
+      { id: "d", text: "Антон Брукнер" },
+    ],
+    correctId: "c",
+  },
+  {
+    id: "verdi",
+    prompt: "Кто изображён на портрете?",
+    image: "/images/composer-verdi.jpg",
+    imageAlt: "Джузеппе Верди",
+    hint: "Итальянская опера",
+    choices: [
+      { id: "a", text: "Джоаккино Россини" },
+      { id: "b", text: "Гаэтано Доницетти" },
+      { id: "c", text: "Винченцо Беллини" },
+      { id: "d", text: "Джузеппе Верди" },
     ],
     correctId: "d",
   },

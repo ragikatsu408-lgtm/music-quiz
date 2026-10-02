@@ -1,5 +1,5 @@
 import "./style.css";
-import { INSTRUMENT_QUESTIONS, QUESTIONS, QUESTION_SECONDS, scoreMessage } from "./questions.js";
+import { COMPOSER_QUESTIONS, INSTRUMENT_QUESTIONS, QUESTIONS, QUESTION_SECONDS, scoreMessage } from "./questions.js";
 import { fetchLeaderboard, getPlayerLabel, saveScore } from "./supabase.js";
 
 const app = document.querySelector("#app");
@@ -43,7 +43,19 @@ function stopAudio() {
 }
 
 function currentDeck() {
-  return state.mode === "picture" ? INSTRUMENT_QUESTIONS : QUESTIONS;
+  if (state.mode === "picture") return INSTRUMENT_QUESTIONS;
+  if (state.mode === "composer") return COMPOSER_QUESTIONS;
+  return QUESTIONS;
+}
+
+function isPhotoMode() {
+  return state.mode === "picture" || state.mode === "composer";
+}
+
+function replayAction() {
+  if (state.mode === "picture") return "picture";
+  if (state.mode === "composer") return "composer";
+  return "start";
 }
 
 function currentQuestion() {
@@ -160,7 +172,7 @@ function readPlayerNameFromForm() {
 
 function startQuiz(mode = state.mode || "melody") {
   readPlayerNameFromForm();
-  state.mode = mode === "picture" ? "picture" : "melody";
+  state.mode = mode === "picture" || mode === "composer" ? mode : "melody";
   const deck = currentDeck();
   if (!deck.length) {
     state.screen = "empty";
@@ -247,13 +259,13 @@ function renderHome() {
     <section class="card">
       <h1>Музыкальная викторина</h1>
       <p class="lede">
-        Восемь мелодий по фрагменту или восемь инструментов по фото. Звук и картинки уже в приложении,
+        Мелодии по фрагменту, инструменты и композиторы — по фото. Звук и картинки уже в приложении,
         внешние сервисы для игры не нужны.
       </p>
       <ul class="rules">
         <li><span class="dot"></span>Четыре варианта ответа на каждый вопрос</li>
         <li><span class="dot"></span>Таймер 15 секунд: тишина тоже считается ответом</li>
-        <li><span class="dot"></span>Мелодии — по фрагменту; инструменты — только по фото, без звука</li>
+        <li><span class="dot"></span>Мелодии — по звуку; инструменты и композиторы — только по фото</li>
       </ul>
       <label class="field">
         <span>Ваше имя для таблицы счёта</span>
@@ -269,6 +281,7 @@ function renderHome() {
       <div class="actions">
         <button class="btn btn-primary" data-action="start">Угадать мелодию</button>
         <button class="btn btn-primary" data-action="picture">Угадать инструмент</button>
+        <button class="btn btn-primary" data-action="composer">Угадать композитора</button>
         <button class="btn btn-ghost" data-action="leaderboard">Таблица лидеров</button>
       </div>
     </section>
@@ -297,7 +310,7 @@ function renderQuiz() {
   if (!question) return renderEmpty();
   const deck = currentDeck();
   const total = deck.length;
-  const pictureClue = state.mode === "picture";
+  const pictureClue = isPhotoMode();
   const dash = circumference();
   const progress = state.remaining / QUESTION_SECONDS;
   const offset = dash * (1 - progress);
@@ -333,7 +346,9 @@ function renderQuiz() {
     question.choices.find((c) => c.id === question.correctId)?.text ||
     question.id;
   const art = question.image
-    ? `<img class="question-art${pictureClue ? " clue" : ""}" src="${escapeHtml(question.image)}" alt="${escapeHtml(title)}" />`
+    ? `<img class="question-art${pictureClue ? " clue" : ""}${
+        state.mode === "composer" ? " portrait" : ""
+      }" src="${escapeHtml(question.image)}" alt="${escapeHtml(title)}" />`
     : "";
 
   const player = pictureClue
@@ -402,9 +417,7 @@ function renderResults() {
           : `<div class="state"><p>Ответов пока нет — раунд оборвался до первого вопроса.</p></div>`
       }
       <div class="actions">
-        <button class="btn btn-primary" data-action="${
-          state.mode === "picture" ? "picture" : "start"
-        }">Сыграть ещё раз</button>
+        <button class="btn btn-primary" data-action="${replayAction()}">Сыграть ещё раз</button>
         <button class="btn btn-ghost" data-action="leaderboard">Таблица лидеров</button>
         <button class="btn btn-ghost" data-action="home">На главную</button>
       </div>
@@ -503,6 +516,7 @@ app.addEventListener("click", (event) => {
   if (!target) return;
   if (target.dataset.action === "start") startQuiz("melody");
   if (target.dataset.action === "picture") startQuiz("picture");
+  if (target.dataset.action === "composer") startQuiz("composer");
   if (target.dataset.action === "home") goHome();
   if (target.dataset.action === "leaderboard") openLeaderboard();
   if (target.dataset.action === "board-back") closeLeaderboard();
@@ -510,7 +524,7 @@ app.addEventListener("click", (event) => {
   if (target.dataset.choice) lockAnswer(target.dataset.choice);
 });
 
-if (!QUESTIONS.length && !INSTRUMENT_QUESTIONS.length) {
+if (!QUESTIONS.length && !INSTRUMENT_QUESTIONS.length && !COMPOSER_QUESTIONS.length) {
   state.screen = "empty";
 }
 
