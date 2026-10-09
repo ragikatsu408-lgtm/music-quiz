@@ -81,7 +81,11 @@ export function renderTeacherRoom(state) {
     ${brand()}
     <section class="card">
       <h1>Комната открыта</h1>
-      <p class="lede">${escapeHtml(room.title)} · ${escapeHtml(MODE_LABELS[room.mode] || "")}</p>
+      <p class="lede">${escapeHtml(room.title)}${
+        MODE_LABELS[room.mode] && MODE_LABELS[room.mode] !== room.title
+          ? ` · ${escapeHtml(MODE_LABELS[room.mode])}`
+          : ""
+      }</p>
       ${banner()}
       <div class="room-code" aria-label="Код комнаты">${escapeHtml(room.code)}</div>
       <p class="lede">Назовите код ученикам или пусть введут его на главной.</p>
