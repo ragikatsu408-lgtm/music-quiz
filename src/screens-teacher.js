@@ -37,7 +37,11 @@ export function renderTeacherDash(state) {
           (room) => `<li class="list-row">
             <span>
               <strong class="code-inline">${escapeHtml(room.code)}</strong>
-              ${escapeHtml(room.title)} · ${escapeHtml(MODE_LABELS[room.mode] || room.mode)}
+              ${escapeHtml(room.title)}${
+                MODE_LABELS[room.mode] && MODE_LABELS[room.mode] !== room.title
+                  ? ` · ${escapeHtml(MODE_LABELS[room.mode])}`
+                  : ""
+              }
             </span>
             <button class="btn btn-ghost" data-action="teacher-results" data-id="${escapeHtml(room.id)}">Результаты</button>
           </li>`,
