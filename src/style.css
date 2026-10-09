@@ -513,4 +513,160 @@ button {
   .question-art.portrait {
     max-height: 260px;
   }
+
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .list-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .row-actions {
+    justify-content: flex-start;
+  }
+
+  .room-code {
+    font-size: 2.4rem;
+    letter-spacing: 0.18em;
+  }
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 8px 0 4px;
+}
+
+.role-card {
+  text-align: left;
+  border-radius: 22px;
+  padding: 20px 18px;
+  background: rgba(8, 5, 16, 0.45);
+  color: var(--text);
+  border: 1px solid var(--stroke);
+  display: grid;
+  gap: 8px;
+  min-height: 120px;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.role-card:hover {
+  border-color: rgba(244, 193, 78, 0.55);
+  transform: translateY(-2px);
+}
+
+.role-card strong {
+  font-size: 1.2rem;
+}
+
+.role-card span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.room-code {
+  font-size: clamp(2.6rem, 8vw, 4rem);
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-align: center;
+  padding: 18px 8px;
+  margin: 8px 0 18px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(244, 193, 78, 0.16), rgba(255, 122, 89, 0.12));
+  border: 1px solid rgba(244, 193, 78, 0.28);
+  color: var(--gold);
+}
+
+.code-inline {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+}
+
+.plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.list-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.editor-q {
+  margin: 0 0 18px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid var(--stroke);
+  background: rgba(8, 5, 16, 0.35);
+}
+
+.choice-edit {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 10px;
+}
+
+.choice-edit input[type="text"] {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: rgba(8, 5, 16, 0.45);
+  color: var(--text);
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 0 0 22px;
+}
+
+table.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+table.grid th,
+table.grid td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--stroke);
+}
+
+table.grid th {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+@media (min-width: 561px) and (max-width: 900px) {
+  .shell {
+    width: min(680px, 100%);
+  }
+}
+
+@media (max-width: 560px) {
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
 }

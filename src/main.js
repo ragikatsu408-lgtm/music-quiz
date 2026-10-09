@@ -2,6 +2,22 @@ import "./style.css";
 import { COMPOSER_QUESTIONS, INSTRUMENT_QUESTIONS, QUESTIONS, QUESTION_SECONDS, SING_QUESTIONS, scoreMessage } from "./questions.js";
 import { detectPitch, formatHz, hzToNote, noteFreq, scoreNote, scorePhrase } from "./pitch.js";
 import { fetchLeaderboard, getPlayerLabel, saveScore } from "./supabase.js";
+import { escapeHtml, brand, formatDuration } from "./ui.js";
+import { emptyQuestion, renderTeacherDash, renderTeacherEdit, renderTeacherResults, renderTeacherRoom } from "./screens-teacher.js";
+import { renderRoleHome, renderStudentJoin } from "./screens-home.js";
+import {
+  classroomStatus,
+  deleteQuiz,
+  getRoomByCode,
+  listAttempts,
+  listQuizzes,
+  listRooms,
+  MODE_LABELS,
+  saveAttempt,
+  saveQuiz,
+  startRoom,
+} from "./classroom.js";
+import { subscribeClassroom } from "./store.js";
 
 const app = document.querySelector("#app");
 
@@ -30,6 +46,19 @@ const state = {
   liveHz: null,
   heardLabel: "",
   singDetail: "",
+  customDeck: [],
+  roomId: "",
+  roomCode: "",
+  roomCodeInput: "",
+  joinError: "",
+  startedAt: 0,
+  teacherQuizzes: [],
+  teacherRooms: [],
+  activeRoom: null,
+  roomAttempts: [],
+  editQuiz: null,
+  editorError: "",
+  timeSpentMs: 0,
 };
 
 let timerId = null;
@@ -56,10 +85,16 @@ function stopAudio() {
 }
 
 function currentDeck() {
+  if (state.mode === "custom") return state.customDeck || [];
   if (state.mode === "picture") return INSTRUMENT_QUESTIONS;
   if (state.mode === "composer") return COMPOSER_QUESTIONS;
   if (state.mode === "sing") return SING_QUESTIONS;
   return QUESTIONS;
+}
+
+function questionSeconds() {
+  const n = Number(currentQuestion()?.seconds);
+  return Number.isFinite(n) && n > 0 ? n : QUESTION_SECONDS;
 }
 
 function isPhotoMode() {
@@ -80,7 +115,8 @@ function currentQuestion() {
 function patchTimer() {
   const question = currentQuestion();
   const dash = circumference();
-  const progress = QUESTION_SECONDS ? state.remaining / QUESTION_SECONDS : 0;
+  const totalSec = questionSeconds();
+  const progress = totalSec ? state.remaining / totalSec : 0;
   const offset = dash * (1 - progress);
   const text = app.querySelector(".timer-text");
   const ring = app.querySelector(".timer circle:nth-child(2)");
@@ -99,7 +135,7 @@ function patchTimer() {
 
 function startTimer() {
   stopTimer();
-  state.remaining = QUESTION_SECONDS;
+  state.remaining = questionSeconds();
   timerId = window.setInterval(() => {
     if (state.mode === "sing" && state.recording) {
       patchTimer();
@@ -312,6 +348,7 @@ function finishQuiz() {
   stopAudio();
   stopRecording(false);
   releaseMic();
+  state.timeSpentMs = state.startedAt ? Date.now() - state.startedAt : 0;
   state.screen = "results";
   state.saveStatus = "saving";
   state.saveError = "";
@@ -319,7 +356,44 @@ function finishQuiz() {
   persistScore();
 }
 
+function roundPoints(score) {
+  return score * 10;
+}
+
 async function persistScore() {
+  const total = currentDeck().length || 1;
+  const percent = Math.round((state.score / total) * 100);
+  const timeSpent = state.timeSpentMs || 0;
+  const missed = state.answers.filter((item) => !item.correct).map((item) => item.title);
+  const classroom = classroomStatus();
+
+  if (state.roomId) {
+    try {
+      await saveAttempt({
+        room_id: state.roomId,
+        player: state.playerName.trim() || "Игрок",
+        score: state.score,
+        total,
+        percent,
+        time_spent_ms: timeSpent,
+        missed,
+        answers: state.answers,
+      });
+      if (classroom.backend === "local" && classroom.error) {
+        state.saveStatus = "error";
+        state.saveError = classroom.error;
+      } else {
+        state.saveStatus = "saved";
+        state.saveError = "";
+      }
+    } catch (error) {
+      state.saveStatus = "error";
+      state.saveError = error?.message || "Не удалось сохранить попытку. Она могла остаться только в этой вкладке.";
+    }
+    if (state.screen === "results") render();
+    return;
+  }
+
   try {
     await saveScore({
       player: state.playerName,
@@ -360,7 +434,11 @@ function readPlayerNameFromForm() {
 
 function startQuiz(mode = state.mode || "melody") {
   readPlayerNameFromForm();
-  state.mode = mode === "picture" || mode === "composer" || mode === "sing" ? mode : "melody";
+  if (mode === "picture" || mode === "composer" || mode === "sing" || mode === "custom") {
+    state.mode = mode;
+  } else {
+    state.mode = "melody";
+  }
   const deck = currentDeck();
   if (!deck.length) {
     state.screen = "empty";
@@ -373,6 +451,7 @@ function startQuiz(mode = state.mode || "melody") {
   state.answers = [];
   state.saveStatus = "idle";
   state.saveError = "";
+  state.startedAt = Date.now();
   beginQuestion();
 }
 
@@ -386,7 +465,183 @@ function goHome() {
   state.score = 0;
   state.answers = [];
   state.audioError = "";
+  state.roomId = "";
+  state.roomCode = "";
+  state.customDeck = [];
+  state.startedAt = 0;
+  state.joinError = "";
+  state.activeRoom = null;
+  state.editQuiz = null;
   render();
+}
+
+function readJoinForm() {
+  const name = app.querySelector("[data-field='player']");
+  const code = app.querySelector("[data-field='room-code']");
+  if (name) state.playerName = name.value;
+  if (code) state.roomCodeInput = String(code.value || "").replace(/\D/g, "").slice(0, 6);
+}
+
+function normalizeCustomQuestion(question, index) {
+  const choices = Array.isArray(question.choices) && question.choices.length
+    ? question.choices.map((choice, i) => ({
+        id: choice.id || ["a", "b", "c", "d"][i] || `c${i}`,
+        text: String(choice.text || "").trim() || `Вариант ${i + 1}`,
+      }))
+    : [
+        { id: "a", text: "A" },
+        { id: "b", text: "B" },
+        { id: "c", text: "C" },
+        { id: "d", text: "D" },
+      ];
+  return {
+    id: question.id || `q-${index + 1}`,
+    prompt: question.prompt || "Что звучит?",
+    title: question.title || question.prompt || `Вопрос ${index + 1}`,
+    hint: question.hint || "Слушайте внимательно",
+    audio: question.audio || "",
+    image: question.image || "",
+    imageAlt: question.imageAlt || "",
+    seconds: Number(question.seconds) > 0 ? Number(question.seconds) : 15,
+    choices,
+    correctId: question.correctId || choices[0].id,
+  };
+}
+
+async function joinRoom() {
+  readJoinForm();
+  if (!state.playerName.trim()) {
+    state.joinError = "Введите имя.";
+    render();
+    return;
+  }
+  if (String(state.roomCodeInput || "").length !== 6) {
+    state.joinError = "Код комнаты — шесть цифр.";
+    render();
+    return;
+  }
+  state.joinError = "";
+  const room = await getRoomByCode(state.roomCodeInput);
+  if (!room) {
+    state.joinError =
+      "Комната не найдена. Проверьте код. Если Supabase недоступен, учитель и ученик должны быть в одном браузере.";
+    render();
+    return;
+  }
+  state.roomId = room.id;
+  state.roomCode = room.code;
+  state.startedAt = Date.now();
+  if (room.mode === "custom") {
+    state.customDeck = (room.snapshot?.questions || []).map(normalizeCustomQuestion);
+    startQuiz("custom");
+    return;
+  }
+  startQuiz(room.mode);
+}
+
+async function refreshTeacherLists() {
+  state.teacherQuizzes = await listQuizzes();
+  state.teacherRooms = await listRooms();
+}
+
+async function openTeacher() {
+  state.screen = "teacher";
+  state.editQuiz = null;
+  render();
+  await refreshTeacherLists();
+  if (state.screen === "teacher") render();
+}
+
+async function openTeacherResults(roomId) {
+  const rooms = state.teacherRooms.length ? state.teacherRooms : await listRooms();
+  const room = rooms.find((item) => item.id === roomId) || (state.activeRoom?.id === roomId ? state.activeRoom : null);
+  if (!room) return;
+  state.activeRoom = room;
+  state.screen = "teacher-results";
+  render();
+  state.roomAttempts = await listAttempts(room.id);
+  if (state.screen === "teacher-results") render();
+}
+
+async function launchRoom({ quiz, mode, title }) {
+  const room = await startRoom({ quiz, mode, title });
+  state.activeRoom = room;
+  state.screen = "teacher-room";
+  await refreshTeacherLists();
+  render();
+}
+
+function openEditor(quiz) {
+  state.editorError = "";
+  state.editQuiz = quiz
+    ? {
+        id: quiz.id,
+        title: quiz.title,
+        created_at: quiz.created_at,
+        questions: (quiz.questions || []).map((question, i) => normalizeCustomQuestion(question, i)),
+      }
+    : { title: "", questions: [emptyQuestion()] };
+  state.screen = "teacher-edit";
+  render();
+}
+
+function readEditor() {
+  const quiz = state.editQuiz || { title: "", questions: [] };
+  const titleEl = app.querySelector("[data-edit='title']");
+  if (titleEl) quiz.title = titleEl.value;
+  (quiz.questions || []).forEach((question, index) => {
+    const prompt = app.querySelector(`[data-edit='prompt'][data-q='${index}']`);
+    const audio = app.querySelector(`[data-edit='audio'][data-q='${index}']`);
+    const seconds = app.querySelector(`[data-edit='seconds'][data-q='${index}']`);
+    const correct = app.querySelector(`input[name='correct-${index}']:checked`);
+    if (prompt) question.prompt = prompt.value;
+    if (audio) question.audio = audio.value;
+    if (seconds) question.seconds = Number(seconds.value) || 15;
+    if (correct) question.correctId = correct.value;
+    (question.choices || []).forEach((choice) => {
+      const input = app.querySelector(
+        `[data-edit='choice'][data-q='${index}'][data-choice='${choice.id}']`,
+      );
+      if (input) choice.text = input.value;
+    });
+  });
+  state.editQuiz = quiz;
+}
+
+async function saveEditor() {
+  readEditor();
+  const quiz = state.editQuiz;
+  if (!quiz.title?.trim()) {
+    state.editorError = "Укажите название викторины.";
+    render();
+    return;
+  }
+  const questions = (quiz.questions || []).map(normalizeCustomQuestion).filter((q) => q.prompt.trim());
+  if (!questions.length) {
+    state.editorError = "Добавьте хотя бы один вопрос с формулировкой.";
+    render();
+    return;
+  }
+  if (questions.some((q) => q.choices.some((c) => !String(c.text || "").trim()))) {
+    state.editorError = "Заполните все варианты ответа.";
+    render();
+    return;
+  }
+  await saveQuiz({ ...quiz, questions });
+  await openTeacher();
+}
+
+function loadAudioFile(index, file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    readEditor();
+    if (state.editQuiz?.questions?.[index]) {
+      state.editQuiz.questions[index].audio = String(reader.result || "");
+      render();
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 function openLeaderboard() {
@@ -423,60 +678,8 @@ async function loadLeaderboard() {
   if (state.screen === "leaderboard") render();
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-function brand() {
-  return `
-    <header class="brand">
-      <div class="brand-mark" aria-hidden="true">♪</div>
-      <div class="brand-copy">
-        <strong>Музыкальная викторина</strong>
-        <span>Слушайте. Узнавайте. Не подглядывайте.</span>
-      </div>
-    </header>
-  `;
-}
-
 function renderHome() {
-  return `
-    ${brand()}
-    <section class="card">
-      <h1>Музыкальная викторина</h1>
-      <p class="lede">
-        Мелодии по фрагменту, инструменты и композиторы по фото, или спойте ноту сами.
-        Звук и картинки уже в приложении.
-      </p>
-      <ul class="rules">
-        <li><span class="dot"></span>Четыре варианта на вопросы с выбором; в пении — микрофон и запись</li>
-        <li><span class="dot"></span>Таймер 15 секунд: в пении запись не сбрасывается, если время вышло</li>
-        <li><span class="dot"></span>Мелодии — по звуку; фото — без звука; пение — образец, затем ваш голос</li>
-      </ul>
-      <label class="field">
-        <span>Ваше имя для таблицы счёта</span>
-        <input
-          data-field="player"
-          type="text"
-          maxlength="40"
-          autocomplete="nickname"
-          placeholder="Игрок"
-          value="${escapeHtml(state.playerName)}"
-        />
-      </label>
-      <div class="actions">
-        <button class="btn btn-primary" data-action="start">Угадать мелодию</button>
-        <button class="btn btn-primary" data-action="picture">Угадать инструмент</button>
-        <button class="btn btn-primary" data-action="composer">Угадать композитора</button>
-        <button class="btn btn-primary" data-action="sing">Спеть самому</button>
-        <button class="btn btn-ghost" data-action="leaderboard">Таблица лидеров</button>
-      </div>
-    </section>
-  `;
+  return renderRoleHome(state);
 }
 
 function renderEmpty() {
@@ -504,7 +707,7 @@ function renderQuiz() {
   const pictureClue = isPhotoMode();
   const singing = state.mode === "sing";
   const dash = circumference();
-  const progress = state.remaining / QUESTION_SECONDS;
+  const progress = state.remaining / questionSeconds();
   const offset = dash * (1 - progress);
   const urgent = state.remaining <= 5 ? "urgent" : "";
   const choices = singing
@@ -657,7 +860,10 @@ function renderSingPanel(question, listenLabel) {
 }
 
 function renderResults() {
-  const total = currentDeck().length;
+  const total = currentDeck().length || 1;
+  const percent = Math.round((state.score / total) * 100);
+  const points = roundPoints(state.score);
+  const timeLabel = formatDuration(state.timeSpentMs || 0);
   const recap = state.answers
     .map((item, i) => {
       const mark = item.timedOut ? "время" : item.correct ? "верно" : "ошибка";
@@ -666,6 +872,10 @@ function renderResults() {
     })
     .join("");
 
+  const roomLine = state.roomCode
+    ? `<p class="muted">Комната ${escapeHtml(state.roomCode)} · ${percent}% · ${points} баллов · ${escapeHtml(timeLabel)}</p>`
+    : `<p class="muted">${escapeHtml(getPlayerLabel(state.playerName))} · ${state.score} из ${total} · ${points} баллов</p>`;
+
   return `
     ${brand()}
     <section class="card">
@@ -673,7 +883,7 @@ function renderResults() {
         <div class="big">${state.score}/${total}</div>
         <h2>Итоги раунда</h2>
         <p class="lede">${escapeHtml(scoreMessage(state.score, total, state.mode))}</p>
-        <p class="muted">${escapeHtml(getPlayerLabel(state.playerName))} · ${state.score} из ${total}</p>
+        ${roomLine}
       </div>
       ${renderSaveNotice()}
       ${
@@ -682,7 +892,7 @@ function renderResults() {
           : `<div class="state"><p>Ответов пока нет — раунд оборвался до первого вопроса.</p></div>`
       }
       <div class="actions">
-        <button class="btn btn-primary" data-action="${replayAction()}">Сыграть ещё раз</button>
+        <button class="btn btn-primary" data-action="${state.mode === "custom" ? "replay-custom" : replayAction()}">Сыграть ещё раз</button>
         <button class="btn btn-ghost" data-action="leaderboard">Таблица лидеров</button>
         <button class="btn btn-ghost" data-action="home">На главную</button>
       </div>
@@ -751,10 +961,12 @@ function renderLeaderboard() {
 
 function renderSaveNotice() {
   if (state.saveStatus === "saving") {
-    return `<p class="save-note">Сохраняем счёт в Supabase…</p>`;
+    return `<p class="save-note">Сохраняем результат…</p>`;
   }
   if (state.saveStatus === "saved") {
-    return `<p class="save-note ok">Счёт сохранён в таблице scores.</p>`;
+    return state.roomId
+      ? `<p class="save-note ok">Результат записан. Учитель видит его на странице комнаты.</p>`
+      : `<p class="save-note ok">Счёт сохранён в таблице scores.</p>`;
   }
   if (state.saveStatus === "error") {
     return `<div class="error-box" role="status">${escapeHtml(state.saveError)}</div>`;
@@ -763,34 +975,104 @@ function renderSaveNotice() {
 }
 
 function render() {
-  const view =
-    state.screen === "quiz"
-      ? renderQuiz()
-      : state.screen === "results"
-        ? renderResults()
-        : state.screen === "leaderboard"
-          ? renderLeaderboard()
-          : state.screen === "empty"
-            ? renderEmpty()
-            : renderHome();
+  const views = {
+    quiz: renderQuiz,
+    results: renderResults,
+    leaderboard: renderLeaderboard,
+    empty: renderEmpty,
+    student: () => renderStudentJoin(state),
+    teacher: () => renderTeacherDash(state),
+    "teacher-room": () => renderTeacherRoom(state),
+    "teacher-edit": () => renderTeacherEdit(state),
+    "teacher-results": () => renderTeacherResults(state),
+    home: renderHome,
+  };
+  const view = (views[state.screen] || renderHome)();
   app.innerHTML = `<main class="shell">${view}</main>`;
 }
 
 app.addEventListener("click", (event) => {
   const target = event.target.closest("[data-action], [data-choice]");
   if (!target) return;
-  if (target.dataset.action === "start") startQuiz("melody");
-  if (target.dataset.action === "picture") startQuiz("picture");
-  if (target.dataset.action === "composer") startQuiz("composer");
-  if (target.dataset.action === "sing") startQuiz("sing");
-  if (target.dataset.action === "home") goHome();
-  if (target.dataset.action === "leaderboard") openLeaderboard();
-  if (target.dataset.action === "board-back") closeLeaderboard();
-  if (target.dataset.action === "replay") playClip();
-  if (target.dataset.action === "sing-record") startRecording();
-  if (target.dataset.action === "sing-stop") stopRecording(true);
-  if (target.dataset.action === "mic-retry") startRecording();
+  const action = target.dataset.action;
+  if (action === "start") startQuiz("melody");
+  if (action === "picture") startQuiz("picture");
+  if (action === "composer") startQuiz("composer");
+  if (action === "sing") startQuiz("sing");
+  if (action === "replay-custom") {
+    state.startedAt = Date.now();
+    startQuiz("custom");
+  }
+  if (action === "home") goHome();
+  if (action === "leaderboard") openLeaderboard();
+  if (action === "board-back") closeLeaderboard();
+  if (action === "replay") playClip();
+  if (action === "sing-record") startRecording();
+  if (action === "sing-stop") stopRecording(true);
+  if (action === "mic-retry") startRecording();
+  if (action === "role-teacher") openTeacher();
+  if (action === "role-student") {
+    state.screen = "student";
+    state.joinError = "";
+    render();
+  }
+  if (action === "student-join") joinRoom();
+  if (action === "quiz-new") openEditor(null);
+  if (action === "quiz-edit") {
+    const quiz = state.teacherQuizzes.find((item) => item.id === target.dataset.id);
+    if (quiz) openEditor(quiz);
+  }
+  if (action === "quiz-delete") {
+    deleteQuiz(target.dataset.id).then(() => openTeacher());
+  }
+  if (action === "quiz-add-q") {
+    readEditor();
+    state.editQuiz.questions.push(emptyQuestion());
+    render();
+  }
+  if (action === "quiz-del-q") {
+    readEditor();
+    const index = Number(target.dataset.q);
+    state.editQuiz.questions.splice(index, 1);
+    if (!state.editQuiz.questions.length) state.editQuiz.questions.push(emptyQuestion());
+    render();
+  }
+  if (action === "quiz-save") saveEditor();
+  if (action === "room-start-quiz") {
+    const quiz = state.teacherQuizzes.find((item) => item.id === target.dataset.id);
+    if (quiz) launchRoom({ quiz, mode: "custom", title: quiz.title });
+  }
+  if (action === "room-start-mode") {
+    const mode = target.dataset.mode;
+    launchRoom({ mode, title: MODE_LABELS[mode] || mode });
+  }
+  if (action === "teacher-results") openTeacherResults(target.dataset.id);
   if (target.dataset.choice && state.mode !== "sing") lockAnswer(target.dataset.choice);
+});
+
+app.addEventListener("input", (event) => {
+  const field = event.target.dataset.field;
+  if (field === "player") state.playerName = event.target.value;
+  if (field === "room-code") state.roomCodeInput = String(event.target.value || "").replace(/\D/g, "").slice(0, 6);
+});
+
+app.addEventListener("change", (event) => {
+  const edit = event.target.dataset.edit;
+  if (edit === "file") loadAudioFile(Number(event.target.dataset.q), event.target.files?.[0]);
+});
+
+subscribeClassroom(async () => {
+  if (state.screen === "teacher") {
+    await refreshTeacherLists();
+    render();
+  }
+  if (state.screen === "teacher-results" && state.activeRoom) {
+    state.roomAttempts = await listAttempts(state.activeRoom.id);
+    render();
+  }
+  if (state.screen === "teacher-room") {
+    await refreshTeacherLists();
+  }
 });
 
 if (!QUESTIONS.length && !INSTRUMENT_QUESTIONS.length && !COMPOSER_QUESTIONS.length && !SING_QUESTIONS.length) {
